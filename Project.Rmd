@@ -1,0 +1,243 @@
+---
+title: "Marketing Shit"
+author: "Bunch of People"
+date: "2023-09-20"
+output: word_document
+---
+
+
+```{r, message=FALSE}
+#load libraries
+library(tidyverse)
+library(dplyr)
+library(ggplot2)
+library(caret)
+library(glmnet)
+library(randomForest)
+library(caTools)
+library(e1071)
+library(car)
+```
+
+```{r, echo = false}
+#read in data
+
+store <- read.csv('/Users/olinyoder/Desktop/Fall 2023/BSAN 430/Datasets/ProjectSuperstore.csv')
+```
+
+```{r}
+head(store)
+```
+
+```{r}
+#convert response, kidhome, teenhom, complain to factors
+store$Response <- as.factor(store$Response)
+store$Complain <- as.factor(store$Complain)
+```
+
+```{r}
+#check categorical variable values
+unique(store$Marital_Status) 
+unique(store$Education)
+#2nd cycle = masters ?? 
+#Basic = high school
+```
+```{r}
+#change the variables
+store$Marital_Status[store$Marital_Status != 'Married'] <- 'Single'
+unique(store$Marital_Status)
+
+store$Education[store$Education == '2n Cycle'] <- 'Graudate'
+store$Education[store$Education == 'Master'] <- 'Graudate'
+store$Education[store$Education == 'Graduation'] <- 'Undergraudate'
+store$Education[store$Education == 'Basic'] <- 'High School'
+unique(store$Education)
+```
+
+```{r}
+#check for na values
+sum(is.na(store))
+#24 na values, inspect them
+
+#for NA char values
+store[store=='NA'] <- NA
+
+na_df <- store[rowSums(is.na(store)) > 0,]
+#view all the data with NA values, looks to be just income variables that are NA. Since we have ample data
+#the simpliest solution is to just remove the na values from the dataset
+na_df
+```
+
+```{r}
+#drop id and date customer column
+#we could do some feature engineering with a datediff function to create a column based on how long someone has been a customer, but fuck that shit
+store = subset(store, select = -c(Id,Dt_Customer) )
+```
+
+```{r}
+#new dataset without the na values
+store2 <- na.omit(store)
+
+#check the dimensions of the dataset before and after we remove the na values
+dim(store)
+dim(na_df)
+dim(store2)
+```
+
+
+
+```{r}
+#train-test split & further preprocessing
+set.seed(123)
+
+training.samples <- store2$Response %>% 
+  createDataPartition(p = 0.7, list = FALSE)
+train.data  <- store2[training.samples, ]
+test.data <- store2[-training.samples, ]
+```
+
+```{r, message=FALSE}
+#check for multicollinearity
+#GGally::ggpairs(store2[,4:20])
+```
+
+```{r}
+#saturated model
+saturatedLogisticModel <- glm(Response~., train.data, family = "binomial")
+
+summary(saturatedLogisticModel)
+```
+
+```{r}
+#test for multicollinearity in the model
+vif(saturatedLogisticModel)
+#not an issue
+```
+
+```{r}
+#odds ratio
+exp(coef(saturatedLogisticModel))
+```
+
+```{r}
+#saturated model
+accuracy <- train(Response ~ ., 
+  data = store2, 
+  method = "glm",
+  family = "binomial",
+  trControl = trainControl(method = "cv", number = 10))
+  
+accuracy
+```
+
+#lasso preprocessing
+```{r}
+#not including data customer variable
+x <- model.matrix(Response~., train.data)[,-1]
+y <- train.data$Response
+```
+
+```{r}
+#Fit the lasso penalized regression model
+set.seed(123)
+cv.lasso <- cv.glmnet(x, y, alpha = 1, family = "binomial")
+# Fit the final model on the training data
+logistcModel <- glmnet(x, y, alpha = 1, family = "binomial",
+                lambda = cv.lasso$lambda.min)
+# Display regression coefficients
+coef(logistcModel)
+```
+
+
+```{r}
+# Make predictions on the test data
+x.test <- model.matrix(Response ~., test.data)[,-1]
+probabilities <- logistcModel %>% predict(newx = x.test)
+predicted.classes <- ifelse(probabilities > 0.5, 1, 0)
+# Model accuracy
+observed.classes <- test.data$Response
+mean(predicted.classes == observed.classes)
+
+```
+
+```{r}
+set.seed(123)
+cv.lasso <- cv.glmnet(x, y, alpha = 1, family = "binomial")
+plot(cv.lasso)
+```
+
+
+```{r}
+# Simplifying the model,Final model with lambda.1se
+lasso.model <- glmnet(x, y, alpha = 1, family = "binomial",
+                      lambda = cv.lasso$lambda.1se)
+# Make prediction on test data
+x.test <- model.matrix(Response ~., test.data)[,-1]
+probabilities <- lasso.model %>% predict(newx = x.test)
+predicted.classes <- ifelse(probabilities > 0.5, 1, 0)
+# Model accuracy rate
+observed.classes <- test.data$Response
+mean(predicted.classes == observed.classes)
+# code from http://www.sthda.com/english/articles/36-classification-methods-essentials/149-penalized-logistic-regression-essentials-in-r-ridge-lasso-and-elastic-net/
+```
+
+#while this logistic regression model has a slightly lower accuracy, it is simplier and therefore we will use it moving forward
+
+#we also did not mess with the optimal threshold for the logistic regression models
+
+```{r}
+coef(lasso.model)
+```
+
+$$
+log(Response) = 
+$$
+
+
+#potential shortcomings with the logistic regression model is that we did not account for the threshold. In practicing, optimzing the thrshold using a ROC plot is ideal.
+
+## Random fucking forest
+```{r}
+#set.seed(123)
+rf <- randomForest(Response ~ ., data=train.data, proximity=TRUE)
+#rf
+```
+
+```{r, warning = false}
+#are we considering optimal number of variables at each internal node
+#set.seed(123)
+oob.values <- vector(length=10)
+for(i in 1:10) {
+  temp.model <- randomForest(Response ~ ., data=train.data, mtry=i, ntree=1000)
+  oob.values[i] <- temp.model$err.rate[nrow(temp.model$err.rate),1]
+}
+#oob.values
+
+## find the minimum error
+#min(oob.values)
+## find the optimal value for mtry...
+#which(oob.values == min(oob.values))
+
+rf2 <- randomForest(Response ~ ., 
+                                data=train.data,
+                                ntree=1000, 
+                                proximity=TRUE, 
+                                mtry=which(oob.values == min(oob.values)))
+```
+
+```{r}
+p2 <- predict(rf2, test.data)
+confusionMatrix(p2, test.data$Response)
+```
+
+```{r}
+varImpPlot(rf2)
+```
+
+#accuracy is slightly higher for the random forest than logistic regression, worrying bit is how low specificity is (meaning high rate of type 1 error(false positive or false acceptance of campaign))
+
+
+# conclusion
+based on our models, can predict with about 85-90% whether a person will accept the marketing campaign
+
+
