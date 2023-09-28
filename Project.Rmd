@@ -1,5 +1,5 @@
 ---
-title: "Marketing Shit"
+title: "Marketing stuff"
 author: "Bunch of People"
 date: "2023-09-20"
 output: word_document
@@ -196,7 +196,7 @@ $$
 
 #potential shortcomings with the logistic regression model is that we did not account for the threshold. In practicing, optimzing the thrshold using a ROC plot is ideal.
 
-## Random fucking forest
+## Random forest
 ```{r}
 #set.seed(123)
 rf <- randomForest(Response ~ ., data=train.data, proximity=TRUE)
