@@ -11,4 +11,5 @@ Once the model is created, evaluate important variables
   * K-means
   * DBSCAN
   * Gaussian Mixture Model
+  
 Evaluate which clusters, in coordinating with the models, are most likely to take part in a promotion
