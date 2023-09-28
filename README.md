@@ -1,5 +1,7 @@
 # SuperStore
+
 BSAN 430
+
 Create a model to predict if a person will take part in a promotion
 
 * Classification
@@ -9,6 +11,7 @@ Create a model to predict if a person will take part in a promotion
   * SVM or other method?
     
 Once the model is created, evaluate important variables
+
 * Clustering
   * K-means
   * DBSCAN
