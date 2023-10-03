@@ -22,7 +22,7 @@ library(car)
 ```{r, echo = false}
 #read in data
 
-store <- read.csv('/Users/olinyoder/Desktop/Fall 2023/BSAN 430/Datasets/ProjectSuperstore.csv')
+store <- read.csv('filepath.csv')
 ```
 
 ```{r}
