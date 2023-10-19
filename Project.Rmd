@@ -1,10 +1,12 @@
 ---
-title: "Marketing stuff"
-author: "Bunch of People"
+title: "Superstore Classification"
+author: "Numerous"
 date: "2023-09-20"
 output: word_document
 ---
 
+#see r script file instead
+#used another reporting method, so no need for this markdown file
 
 ```{r, message=FALSE}
 #load libraries
