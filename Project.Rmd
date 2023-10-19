@@ -72,7 +72,7 @@ na_df
 
 ```{r}
 #drop id and date customer column
-#we could do some feature engineering with a datediff function to create a column based on how long someone has been a customer, but fuck that shit
+#we could do some feature engineering with a datediff function to create a column based on how long someone has been a customer
 store = subset(store, select = -c(Id,Dt_Customer) )
 ```
 
