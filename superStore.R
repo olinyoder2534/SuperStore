@@ -134,7 +134,7 @@ test_accuracy
   #77% accurate
 
 #FEATURE SELECTION (LASSO)
-
+#OPTIMAL LAMBDA
 #splitting data
 x <- model.matrix(Response ~ ., train.data)[, -1]
 y <- train.data$Response
@@ -177,7 +177,7 @@ accuracy <- mean(predicted_classes == observed_classes)
 accuracy
   #77% accuracy
 
-#SIMPLIFY
+#SIMPLIFY (1 SD OF OPTIMAL LAMBDA)
 set.seed(123)
 cv.lasso <- cv.glmnet(x, y, alpha = 1, family = "binomial")
 plot(cv.lasso)
