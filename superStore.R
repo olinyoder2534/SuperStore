@@ -350,7 +350,7 @@ coef_matrix1 <- as.matrix(coef(logisticModel2))
 cor_diag <- diag(cor(x))
 vif_values1 <- 1 / (1 - coef_matrix1^2)
 vif_values1
-#no issues with multicollinearity, but teenhome has a negative vif which could be a result of slight miscalculations due to hardcoding to find vif values 
+#no issues with multicollinearity
 
 #deviance residuals
 dev_predicted_probabilities2 <- predict(logisticModel2, s = lambda_min, newx = x, type = "response")
