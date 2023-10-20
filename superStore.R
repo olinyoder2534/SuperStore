@@ -18,7 +18,7 @@ library(ResourceSelection)
 
 #LOADING
 #----
-store <- read.csv('FilePath.csv')
+store <- read.csv('/Users/olinyoder/Desktop/Fall 2023/BSAN 430/Datasets/ProjectSuperstore.csv')
 
 head(store,1)
 dim(store)
@@ -192,7 +192,7 @@ ggplot((store), aes(x=Complain)) +
 #DAYSCUST
 hist(store$daysCust)
 
-#there are a few outliers, but nothing too egregious, will keep an eye on them when building models
+#there are a few outliers, but nothing too egregious 
 #most amount/number of variables are skewed right which is not surprising. A transformation could be made, but not necessary
 #----
 
@@ -208,7 +208,7 @@ store = subset(store, select = -c(Id,Dt_Customer))
 store2 <- na.omit(store)
 
 #write out new dataset
-write.csv(storeClean,file='FilePath',fileEncoding = "UTF-8")
+write.csv(storeClean,file='/Users/olinyoder/Desktop/chipotleNew.csv',fileEncoding = "UTF-8")
 #----
 
 #MODELING
@@ -272,7 +272,7 @@ test_predicted_classes <- ifelse(test_predicted_probabilities >= optimal_thresho
 test_observed_classes <- test.data$Response
 test_accuracy <- mean(test_predicted_classes == test_observed_classes)
 test_accuracy
-  #~73% accurate
+  #~76% accurate
 
 #FEATURE SELECTION (LASSO)
 
@@ -294,7 +294,7 @@ coef_matrix <- as.matrix(coef(logisticModel))
 cor_diag <- diag(cor(x))
 vif_values <- 1 / (1 - coef_matrix^2)
 vif_values
-#no issues with multicollinearity, but teenhome has a negative vif which could be a result of slight miscalculations due to hardcoding to find vif values 
+#teenhome VIF > 5
 
 #deviance residuals
 dev_predicted_probabilities1 <- predict(logisticModel, s = lambda_min, newx = x, type = "response")
@@ -334,9 +334,10 @@ accuracy <- mean(predicted_classes == observed_classes)
 
 #accuracy
 accuracy
-  #~77% accuracy
+  #~79% accuracy
 
 #SIMPLIFY
+#should take care of issues with multicollinearity and potential overfitting
 set.seed(123)
 cv.lasso <- cv.glmnet(x, y, alpha = 1, family = "binomial")
 plot(cv.lasso)
@@ -390,7 +391,7 @@ rf <- randomForest(Response ~ ., data=train.data, proximity=TRUE)
 
 p2 <- predict(rf, test.data)
 confusionMatrix(p2, test.data$Response)
-  #~88% accuracy
+  #~87% accuracy
 
 varImpPlot(rf)
 
@@ -452,3 +453,4 @@ varImpPlot(final_rf)
 #----
 
 #cluster the data in Jamovi
+
