@@ -17,7 +17,7 @@ library(pROC)
 
 #LOADING
 #----
-store <- read.csv('/Users/olinyoder/Desktop/Fall 2023/BSAN 430/Datasets/ProjectSuperstore.csv')
+store <- read.csv('FilePath')
 
 head(store,1)
 dim(store)
@@ -81,7 +81,7 @@ store = subset(store, select = -c(Id,Dt_Customer))
 store2 <- na.omit(store)
 
 #write out new dataset
-write.csv(store2,file='/Users/olinyoder/Desktop/chipotleNew.csv',fileEncoding = "UTF-8")
+write.csv(store2,file='FilePath',fileEncoding = "UTF-8")
 #----
 
 #MODELING
@@ -262,4 +262,4 @@ final_rf_accuracy
 varImpPlot(final_rf)
 #----
 
-#cluster the data in Jamovi
+#cluster the data (Jamovi) for next steps in project
