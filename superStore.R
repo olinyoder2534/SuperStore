@@ -143,15 +143,15 @@ y <- train.data$Response
 set.seed(123)
 cv.lasso <- cv.glmnet(x, y, alpha = 1, family = "binomial")
 
-#coefficients
-coef(logistcModel1)
-
-#odds ratio
-round(exp(coef(logistcModel1)),2)
-
 #fit the final model on the training data using the optimal lambda
 lambda_min <- cv.lasso$lambda.min
 logisticModel <- glmnet(x, y, alpha = 1, family = "binomial", lambda = lambda_min)
+
+#coefficients
+coef(logisticModel)
+
+#odds ratio
+round(exp(coef(logisticModel)),2)
 
 #create a ROC curve object
 x.test <- model.matrix(Response ~ ., test.data)[, -1]
