@@ -18,7 +18,7 @@ library(ResourceSelection)
 
 #LOADING
 #----
-store <- read.csv('/Users/olinyoder/Desktop/Fall 2023/BSAN 430/Datasets/ProjectSuperstore.csv')
+store <- read.csv('FilePath.csv')
 
 head(store,1)
 dim(store)
@@ -208,7 +208,7 @@ store = subset(store, select = -c(Id,Dt_Customer))
 store2 <- na.omit(store)
 
 #write out new dataset
-write.csv(storeClean,file='/Users/olinyoder/Desktop/chipotleNew.csv',fileEncoding = "UTF-8")
+write.csv(storeClean,file='/FilePath',fileEncoding = "UTF-8")
 #----
 
 #MODELING
