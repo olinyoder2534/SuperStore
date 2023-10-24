@@ -70,8 +70,7 @@ store$daysCust <- difftime("2023-1-01", store$Dt_Customer, units = "days")
 head(store$daysCust)
 class(store$daysCust)
 #convert daysCust from difftime to numeric
-store$daysCust <- as.numeric(store$daysCust)
-store$daysCust <- round(store$daysCust, 0)
+store$daysCust <- round(as.numeric(store$daysCust),0)
 #----
 
 #EDA
@@ -193,7 +192,7 @@ ggplot((store), aes(x=Complain)) +
 hist(store$daysCust)
 
 #there are a few outliers, but nothing too egregious 
-#most amount/number of variables are skewed right which is not surprising. A transformation could be made, but not necessary
+#most amount/number of variables are skewed right which is not surprising (outliers). A transformation could be made, but not necessary
 #----
 
 #FINAL CLEANING
@@ -201,14 +200,15 @@ hist(store$daysCust)
 #duplicate store without dropping any columns
 storeClean <- na.omit(store)
 
+#write out new dataset
+write.csv(storeClean,file='FilePath',fileEncoding = "UTF-8")
+
+#new data for modeling
 #drop id and date customer column
 store = subset(store, select = -c(Id,Dt_Customer))
 
 #remove NA values
 store2 <- na.omit(store)
-
-#write out new dataset
-write.csv(storeClean,file='/FilePath',fileEncoding = "UTF-8")
 #----
 
 #MODELING
@@ -233,7 +233,7 @@ summary(saturatedLogisticModel)
 
 #test for multicollinearity in the model
 vif(saturatedLogisticModel)
-#not too major of an issue, all below 5
+#not too major of an issue, all well below 5
 
 #deviance residuals
 deviance_residuals <- residuals(saturatedLogisticModel, type = "deviance")
@@ -257,11 +257,11 @@ test_predicted_probabilities <- predict(saturatedLogisticModel, newdata = test.d
 #create a ROC curve object for the test data
 roc_obj_test <- roc(test.data$Response, test_predicted_probabilities)
 
-#find the optimal threshold using the Youden's J statistic (highest sum of sens+spec) for the test data
+#find the optimal threshold - Youden's J statistic (highest sum of sens+spec) for the test data
 optimal_threshold_test <- coords(roc_obj_test, "best", best.method = "youden")$threshold
 optimal_threshold_test
 
-#calculate sensitivity and specificity at the optimal threshold for the test data
+#sensitivity and specificity
 optimal_sensitivity_test <- coords(roc_obj_test, best.method = "youden")$sensitivity
 optimal_specificity_test <- coords(roc_obj_test, best.method = "youden")$specificity
 
@@ -279,6 +279,8 @@ test_accuracy
 #splitting data
 x <- model.matrix(Response ~ ., train.data)[, -1]
 y <- train.data$Response
+x.test <- model.matrix(Response ~ ., test.data)[, -1]
+y.test <- test.data$Response
 
 #fit the lasso penalized regression model
 set.seed(123)
@@ -297,11 +299,11 @@ vif_values
 #teenhome VIF > 5
 
 #deviance residuals
-dev_predicted_probabilities1 <- predict(logisticModel, s = lambda_min, newx = x, type = "response")
-head(as.numeric(y))
-mean(as.numeric(y))
+dev_predicted_probabilities1 <- predict(logisticModel, s = lambda_min, newx = x.test, type = "response")
+head(as.numeric(y.test))
+mean(as.numeric(y.test))
 #converting to numeric is increasing y by 1, so we need to undo it
-y_numeric <- as.numeric(y) - 1
+y_numeric <- as.numeric(y.test) - 1
 deviance_residuals1 <- y_numeric - dev_predicted_probabilities1
 hist(deviance_residuals1, breaks = 20, main = "Deviance Residuals")
 #no issues
@@ -313,15 +315,14 @@ coef(logisticModel)
 round(exp(coef(logisticModel)),2)
 
 #create a ROC curve object
-x.test <- model.matrix(Response ~ ., test.data)[, -1]
 probabilities <- predict(logisticModel, s = lambda_min, newx = x.test, type = "response")
 roc_obj <- roc(test.data$Response, probabilities)
 
-#find the optimal threshold using the Youden's J statistic
+#find the optimal threshold - Youden's J statistic (highest sum of sens+spec) for the test data
 optimal_threshold <- coords(roc_obj, "best", best.method = "youden")$threshold
 optimal_threshold
 
-#calculate the corresponding sensitivity and specificity
+#sensitivity and specificity
 optimal_sensitivity <- coords(roc_obj, "best", best.method = "youden")[["sensitivity"]]
 optimal_specificity <- coords(roc_obj, "best", best.method = "youden")[["specificity"]]
 
@@ -354,10 +355,10 @@ vif_values1
 #no issues with multicollinearity
 
 #deviance residuals
-dev_predicted_probabilities2 <- predict(logisticModel2, s = lambda_min, newx = x, type = "response")
+dev_predicted_probabilities2 <- predict(logisticModel2, s = lambda_min, newx = x.test, type = "response")
 #converting to numeric is increasing y by 1, so we need to undo it
-y_numeric <- as.numeric(y) - 1
-deviance_residuals2 <- y_numeric - dev_predicted_probabilities2
+y_numeric1 <- as.numeric(y.test) - 1
+deviance_residuals2 <- y_numeric1 - dev_predicted_probabilities2
 hist(deviance_residuals2, breaks = 20, main = "Deviance Residuals")
 #no issues
 
@@ -367,7 +368,6 @@ coef(logisticModel2)
 #odds ratio
 round(exp(coef(logisticModel2)),2)
 
-x.test1 <- model.matrix(Response ~ ., test.data)[, -1]
 probabilities1 <- predict(logisticModel2, s = cv.lasso$lambda.1se, newx = x.test, type = "response")
 roc_obj1 <- roc(test.data$Response, probabilities1)
 
@@ -379,7 +379,7 @@ predicted_classes1 <- ifelse(probabilities1 > optimal_threshold1, 1, 0)
 observed_classes1 <- test.data$Response
 accuracy1 <- mean(predicted_classes1 == observed_classes1)
 accuracy1
-  #~76% accuracy
+  #~75% accuracy
 #----
 
 #RANDOM FOREST
@@ -407,7 +407,7 @@ best_mtry <- NULL
 best_ntree <- NULL
 best_oob_error <- Inf
 
-# Create an empty matrix to store the results
+#optimize mtry and ntree
 results_df <- data.frame(mtry = integer(0), ntree = integer(0), oob_error = double(0))
 
 for (mtry in mtry_values) {
@@ -439,6 +439,7 @@ ggplot(results_df, aes(x = mtry, y = ntree, color = oob_error)) +
   scale_color_gradient(low = "black", high = "white") +
   labs(x = "mtry", y = "ntree", color = "OOB Error") +
   theme_minimal()
+#can use the simplest amount of mtry + ntree combo -- simplest combo that is dark on the chart
 
 #train model
 final_rf <- randomForest(Response ~ ., data = train.data, mtry = best_mtry, ntree = best_ntree, proximity = TRUE)
@@ -453,4 +454,3 @@ varImpPlot(final_rf)
 #----
 
 #cluster the data in Jamovi
-
