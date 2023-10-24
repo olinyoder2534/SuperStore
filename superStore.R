@@ -299,11 +299,11 @@ vif_values
 #teenhome VIF > 5
 
 #deviance residuals
-dev_predicted_probabilities1 <- predict(logisticModel, s = lambda_min, newx = x.test, type = "response")
-head(as.numeric(y.test))
-mean(as.numeric(y.test))
+dev_predicted_probabilities1 <- predict(logisticModel, s = lambda_min, newx = x, type = "response")
+head(as.numeric(y))
+mean(as.numeric(y))
 #converting to numeric is increasing y by 1, so we need to undo it
-y_numeric <- as.numeric(y.test) - 1
+y_numeric <- as.numeric(y) - 1
 deviance_residuals1 <- y_numeric - dev_predicted_probabilities1
 hist(deviance_residuals1, breaks = 20, main = "Deviance Residuals")
 #no issues
@@ -355,9 +355,9 @@ vif_values1
 #no issues with multicollinearity
 
 #deviance residuals
-dev_predicted_probabilities2 <- predict(logisticModel2, s = lambda_min, newx = x.test, type = "response")
+dev_predicted_probabilities2 <- predict(logisticModel2, s = lambda_min, newx = x, type = "response")
 #converting to numeric is increasing y by 1, so we need to undo it
-y_numeric1 <- as.numeric(y.test) - 1
+y_numeric1 <- as.numeric(y) - 1
 deviance_residuals2 <- y_numeric1 - dev_predicted_probabilities2
 hist(deviance_residuals2, breaks = 20, main = "Deviance Residuals")
 #no issues
