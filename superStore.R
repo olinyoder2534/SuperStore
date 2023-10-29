@@ -183,6 +183,9 @@ boxplot(store$NumWebVisitsMonth)
 #RESPONSE
 ggplot((store), aes(x=Response)) +
   geom_histogram(stat = "count")
+as.data.frame(table(store$Response))
+334/(1902+334)
+#~15% responsed yes
 
 #COMPLAIN
 ggplot((store), aes(x=Complain)) +
