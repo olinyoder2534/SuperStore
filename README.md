@@ -17,4 +17,4 @@ Create a model to predict if a person will take part in a promotion
   * DBSCAN
   * Gaussian Mixture Model
   
-Evaluate which clusters are most likely to take part in a promotion. Create a marketing plan based on the clustering and in coordination with the models.
+Evaluate which clusters, and customers, are most likely to take part in a promotion. Create a marketing plan based on the clustering and in coordination with the models for existing and new customers.
