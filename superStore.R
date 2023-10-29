@@ -19,6 +19,7 @@ library(ResourceSelection)
 #LOADING
 #----
 store <- read.csv('FilePath.csv')
+storecopy <- store
 
 head(store,1)
 dim(store)
@@ -64,13 +65,15 @@ na_df <- store[rowSums(is.na(store)) > 0,]
 
 #FEATURE ENGINEERING
 #----
-#create a new column based on number of days a person has been a customer
+#create a new column based on number of days since a person has been a customer
 #dataset was published in January 2023
 store$daysCust <- difftime("2023-1-01", store$Dt_Customer, units = "days")
 head(store$daysCust)
 class(store$daysCust)
 #convert daysCust from difftime to numeric
 store$daysCust <- round(as.numeric(store$daysCust),0)
+
+storecopyNoNA <- na.omit(store)
 #----
 
 #EDA
@@ -201,17 +204,21 @@ hist(store$daysCust)
 #FINAL CLEANING
 #----
 #duplicate store without dropping any columns
+#remove NA's
 storeClean <- na.omit(store)
 
-#write out new dataset
+#write out new dataset (No NA's, cleaned data without outliers)
 write.csv(storeClean,file='FilePath',fileEncoding = "UTF-8")
+
+#write out new dataset (No NA's, cleaned data with outliers)
+write.csv(storecopyNoNA,file='FilePath',fileEncoding = "UTF-8")
 
 #new data for modeling
 #drop id and date customer column
-store = subset(store, select = -c(Id,Dt_Customer))
+store2 = subset(store, select = -c(Id,Dt_Customer))
 
 #remove NA values
-store2 <- na.omit(store)
+store2 <- na.omit(store2)
 #----
 
 #MODELING
@@ -275,7 +282,7 @@ test_predicted_classes <- ifelse(test_predicted_probabilities >= optimal_thresho
 test_observed_classes <- test.data$Response
 test_accuracy <- mean(test_predicted_classes == test_observed_classes)
 test_accuracy
-  #~76% accurate
+  #~76% accurate 7688822
 
 #FEATURE SELECTION (LASSO)
 
@@ -338,7 +345,7 @@ accuracy <- mean(predicted_classes == observed_classes)
 
 #accuracy
 accuracy
-  #~79% accuracy
+  #~79% accuracy 0.7960725
 
 #SIMPLIFY
 #should take care of issues with multicollinearity and potential overfitting
@@ -457,35 +464,44 @@ varImpPlot(final_rf)
 #----
 
 #PREDICTIONS
+#not too important bc the main goal of the models is to predict on new customers
 #----
 #get top 15% of people that are most likely to take part in the promotion
 #saturated model
-sat_predictions <- predict(saturatedLogisticModel, store2, type = 'response', interval = 'confidence')
-sat_above_threshold <- which(sat_predictions > quantile(sat_predictions, 1 - .15))
-sat_values_above_threshold <- sat_predictions[sat_above_threshold]
-sat_data_above_threshold <- data.frame(Row_Number = sat_above_threshold, Probability = sat_values_above_threshold)
-sat_data_above_threshold <- sat_data_above_threshold[order(sat_data_above_threshold$Probability, decreasing = TRUE), ]
-sat_data_above_threshold
+sat_storeClean <- storeClean
+sat_predictions <- predict(saturatedLogisticModel, storeClean[, !names(storeClean) %in% c("Id", "Dt_Customer")], type = 'response', interval = 'confidence')
+sat_storeClean$Predicted_Outcome <- sat_predictions
+sat_storeClean <- sat_storeClean[order(-sat_predictions), ]
+filtered_sat_storeClean <- sat_storeClean[sat_predictions > quantile(sat_predictions, 0.85), ]
+filtered_sat_storeClean1 <- filtered_sat_storeClean[,c("Id","Predicted_Outcome")]
+head(filtered_sat_storeClean1,2)
 
 #lasso1
-lasso1_predictions <- predict(logisticModel, model.matrix(Response ~ ., store2)[, -1], type = 'response', interval = 'confidence')
-lasso1_above_threshold <- which(lasso1_predictions > quantile(lasso1_predictions, 1 - .15))
-lasso1_values_above_threshold <- lasso1_predictions[lasso1_above_threshold]
-lasso1_data_above_threshold <- data.frame(Row_Number = lasso1_above_threshold, Probability = lasso1_values_above_threshold)
-lasso1_data_above_threshold <- lasso1_data_above_threshold[order(lasso1_data_above_threshold$Probability, decreasing = TRUE), ]
-lasso1_data_above_threshold
+lasso1_storeClean <- storeClean
+lasso1_predictions <- predict(logisticModel, model.matrix(Response ~ .-Id - Dt_Customer, storeClean)[, -1], type = 'response', interval = 'confidence')
+lasso1_storeClean$Predicted_Outcome <- lasso1_predictions
+lasso1_storeClean <- lasso1_storeClean[order(-lasso1_predictions), ]
+filtered_lasso1_storeClean <- lasso1_storeClean[lasso1_predictions > quantile(lasso1_predictions, 0.85), ]
+filtered_lasso1_storeClean1 <- filtered_lasso1_storeClean[,c("Id","Predicted_Outcome")]
+head(filtered_lasso1_storeClean1,2)
 
 #lasso2
-lasso2_predictions <- predict(logisticModel2, model.matrix(Response ~ ., store2)[, -1], type = 'response', interval = 'confidence')
-lasso2_above_threshold <- which(lasso2_predictions > quantile(lasso2_predictions, 1 - .15))
-lasso2_values_above_threshold <- lasso2_predictions[lasso2_above_threshold]
-lasso2_data_above_threshold <- data.frame(Row_Number = lasso2_above_threshold, Probability = lasso2_values_above_threshold)
-lasso2_data_above_threshold <- lasso2_data_above_threshold[order(lasso2_data_above_threshold$Probability, decreasing = TRUE), ]
-lasso2_data_above_threshold
+lasso2_storeClean <- storeClean
+lasso2_predictions <- predict(logisticModel2, model.matrix(Response ~ .-Id - Dt_Customer, storeClean)[, -1], type = 'response', interval = 'confidence')
+lasso2_storeClean$Predicted_Outcome <- lasso2_predictions
+lasso2_storeClean <- lasso2_storeClean[order(-lasso2_predictions), ]
+filtered_lasso2_storeClean <- lasso2_storeClean[lasso2_predictions > quantile(lasso2_predictions, 0.85), ]
+filtered_lasso2_storeClean1 <- filtered_lasso2_storeClean[,c("Id","Predicted_Outcome")]
+head(filtered_lasso2_storeClean1,2)
+
+#which people are in the top 15% in all three models?
+sat_lasso1_join <- merge(filtered_lasso1_storeClean1, filtered_sat_storeClean1, by = "Id")
+final_join <- merge(filtered_lasso2_storeClean1, sat_lasso1_join, by = "Id")
+final_join
 
 #rf
 rf_predictions <- predict(final_rf, store2, type = 'response', interval = 'confidence')
-as.data.frame(rf_predictions[rf_predictions == 1])
+dim(as.data.frame(rf_predictions[rf_predictions == 1]))
 as.data.frame(table(rf_predictions))
 #----
 
