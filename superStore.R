@@ -453,4 +453,36 @@ final_rf_accuracy
 varImpPlot(final_rf)
 #----
 
+#PREDICTIONS
+#----
+#get top 15% of people that are most likely to take part in the promotion
+#saturated model
+sat_predictions <- predict(saturatedLogisticModel, store2, type = 'response', interval = 'confidence')
+sat_above_threshold <- which(sat_predictions > quantile(sat_predictions, 1 - .15))
+sat_values_above_threshold <- sat_predictions[sat_above_threshold]
+sat_data_above_threshold <- data.frame(Row_Number = sat_above_threshold, Probability = sat_values_above_threshold)
+sat_data_above_threshold <- sat_data_above_threshold[order(sat_data_above_threshold$Probability, decreasing = TRUE), ]
+sat_data_above_threshold
+
+#lasso1
+lasso1_predictions <- predict(logisticModel, model.matrix(Response ~ ., store2)[, -1], type = 'response', interval = 'confidence')
+lasso1_above_threshold <- which(lasso1_predictions > quantile(lasso1_predictions, 1 - .15))
+lasso1_values_above_threshold <- lasso1_predictions[lasso1_above_threshold]
+lasso1_data_above_threshold <- data.frame(Row_Number = lasso1_above_threshold, Probability = lasso1_values_above_threshold)
+lasso1_data_above_threshold <- lasso1_data_above_threshold[order(lasso1_data_above_threshold$Probability, decreasing = TRUE), ]
+lasso1_data_above_threshold
+
+#lasso2
+lasso2_predictions <- predict(logisticModel2, model.matrix(Response ~ ., store2)[, -1], type = 'response', interval = 'confidence')
+lasso2_above_threshold <- which(lasso2_predictions > quantile(lasso2_predictions, 1 - .15))
+lasso2_values_above_threshold <- lasso2_predictions[lasso2_above_threshold]
+lasso2_data_above_threshold <- data.frame(Row_Number = lasso2_above_threshold, Probability = lasso2_values_above_threshold)
+lasso2_data_above_threshold <- lasso2_data_above_threshold[order(lasso2_data_above_threshold$Probability, decreasing = TRUE), ]
+lasso2_data_above_threshold
+
+#rf
+rf_predictions <- predict(final_rf, store2, type = 'response', interval = 'confidence')
+as.data.frame(rf_predictions[rf_predictions == 1])
+as.data.frame(table(rf_predictions))
+
 #cluster the data in Jamovi
