@@ -64,7 +64,7 @@ na_df <- store[rowSums(is.na(store)) > 0,]
 
 #FEATURE ENGINEERING
 #----
-#create a new column based on number of days since a person has been a customer
+#create a new column based on number of days a person has been a customer
 #dataset was published in January 2023
 store$daysCust <- difftime("2023-1-01", store$Dt_Customer, units = "days")
 head(store$daysCust)
@@ -484,5 +484,6 @@ lasso2_data_above_threshold
 rf_predictions <- predict(final_rf, store2, type = 'response', interval = 'confidence')
 as.data.frame(rf_predictions[rf_predictions == 1])
 as.data.frame(table(rf_predictions))
+#----
 
 #cluster the data in Jamovi
