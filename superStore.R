@@ -282,7 +282,7 @@ test_predicted_classes <- ifelse(test_predicted_probabilities >= optimal_thresho
 test_observed_classes <- test.data$Response
 test_accuracy <- mean(test_predicted_classes == test_observed_classes)
 test_accuracy
-  #~76% accurate 7688822
+  #~76% accurate
 
 #FEATURE SELECTION (LASSO)
 
@@ -345,7 +345,7 @@ accuracy <- mean(predicted_classes == observed_classes)
 
 #accuracy
 accuracy
-  #~79% accuracy 0.7960725
+  #~79% accuracy
 
 #SIMPLIFY
 #should take care of issues with multicollinearity and potential overfitting
