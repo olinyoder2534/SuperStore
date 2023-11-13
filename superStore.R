@@ -14,6 +14,7 @@ library(car)
 library(anytime)
 library(pROC)
 library(ResourceSelection)
+library(MLmetrics)
 #----
 
 #LOADING
@@ -35,7 +36,11 @@ unique(store$Response)
 unique(store$Complain)
 
 #recode Marital_Status
-store$Marital_Status[store$Marital_Status != 'Married'] <- 'Single'
+as.data.frame(table(store$Marital_Status))
+store$Marital_Status[store$Marital_Status == 'Absurd'] <- 'Single'
+store$Marital_Status[store$Marital_Status == 'Alone'] <- 'Single'
+store$Marital_Status[store$Marital_Status == 'YOLO'] <- 'Single'
+unique(store$Marital_Status)
 
 #recode Education
 store$Education[store$Education == '2n Cycle'] <- 'Graudate'
@@ -73,7 +78,7 @@ class(store$daysCust)
 #convert daysCust from difftime to numeric
 store$daysCust <- round(as.numeric(store$daysCust),0)
 
-storecopyNoNA <- na.omit(store)
+storeCleanWOutliers <- na.omit(store)
 #----
 
 #EDA
@@ -103,12 +108,12 @@ top_10_income <- data.frame(RowNumber = 1:nrow(store), Income = store$Income)
 top_10_income <- head(top_10_income[order(-top_10_income$Income), ], 10)
 top_10_income
 
-#remove extreme outlier, row 528
-store <- store[-528, ]
+#remove extreme outlier, or just anything over 500K
+store <- store[store$Income <= 500000, ]
 dim(store)
 boxplot(store$Income)
 top_10_income1 <- data.frame(RowNumber = 1:nrow(store), Income = store$Income)
-top_10_income1 <- head(top_10_income[order(-top_10_income$Income), ], 10)
+top_10_income1 <- head(top_10_income1[order(-top_10_income1$Income), ], 10)
 top_10_income1
 #there are still a couple outliers, but none so drastic as before so we'll keep them for now
 
@@ -211,7 +216,7 @@ storeClean <- na.omit(store)
 write.csv(storeClean,file='FilePath',fileEncoding = "UTF-8")
 
 #write out new dataset (No NA's, cleaned data with outliers)
-write.csv(storecopyNoNA,file='FilePath',fileEncoding = "UTF-8")
+write.csv(storeCleanWOutliers,file='FilePath.csv',fileEncoding = "UTF-8")
 
 #new data for modeling
 #drop id and date customer column
@@ -284,6 +289,16 @@ test_accuracy <- mean(test_predicted_classes == test_observed_classes)
 test_accuracy
   #~76% accurate
 
+#confusion matrix
+conf_matrix <- table(Actual = test.data$Response, Predicted = test_predicted_classes)
+conf_matrix
+
+# Print the results
+precision <- conf_matrix[1,1]/(conf_matrix[1,1]+conf_matrix[1,2])
+recall <- conf_matrix[1,1]/(conf_matrix[1,1]+conf_matrix[2,1])
+f1_score <- (2*precision*recall)/(precision+recall)
+f1_score
+
 #FEATURE SELECTION (LASSO)
 
 #splitting data
@@ -337,15 +352,26 @@ optimal_sensitivity <- coords(roc_obj, "best", best.method = "youden")[["sensiti
 optimal_specificity <- coords(roc_obj, "best", best.method = "youden")[["specificity"]]
 
 #create binary predictions based on the optimal threshold
-predicted_classes <- ifelse(probabilities > optimal_threshold, 1, 0)
+predicted_classes2 <- ifelse(probabilities > optimal_threshold, 1, 0)
 
 #calculate accuracy
-observed_classes <- test.data$Response
-accuracy <- mean(predicted_classes == observed_classes)
+observed_classes2 <- test.data$Response
+accuracy <- mean(predicted_classes2 == observed_classes2)
 
 #accuracy
 accuracy
-  #~79% accuracy
+  #~75% accuracy
+
+#conf matrix
+conf_matrix2 <- table(Actual = test.data$Response, Predicted = predicted_classes2)
+conf_matrix2
+
+# Print the results
+precision2 <- conf_matrix2[1,1]/(conf_matrix2[1,1]+conf_matrix2[1,2])
+recall2 <- conf_matrix2[1,1]/(conf_matrix2[1,1]+conf_matrix2[2,1])
+f1_score2 <- (2*precision2*recall2)/(precision2+recall2)
+f1_score2
+#slightly lower f1 score than saturated model
 
 #SIMPLIFY
 #should take care of issues with multicollinearity and potential overfitting
@@ -389,7 +415,18 @@ predicted_classes1 <- ifelse(probabilities1 > optimal_threshold1, 1, 0)
 observed_classes1 <- test.data$Response
 accuracy1 <- mean(predicted_classes1 == observed_classes1)
 accuracy1
-  #~75% accuracy
+  #~74% accuracy
+
+#conf matrix
+conf_matrix3 <- table(Actual = test.data$Response, Predicted = predicted_classes1)
+conf_matrix3
+
+# Print the results
+precision3 <- conf_matrix3[1,1]/(conf_matrix3[1,1]+conf_matrix3[1,2])
+recall3 <- conf_matrix3[1,1]/(conf_matrix3[1,1]+conf_matrix3[2,1])
+f1_score3 <- (2*precision3*recall3)/(precision+recall3)
+f1_score3
+#lowest f1 score
 #----
 
 #RANDOM FOREST
@@ -400,8 +437,10 @@ rf <- randomForest(Response ~ ., data=train.data, proximity=TRUE)
 #rf
 
 p2 <- predict(rf, test.data)
-confusionMatrix(p2, test.data$Response)
-  #~87% accuracy
+rfcm <- confusionMatrix(p2, test.data$Response)
+  #~88% accuracy
+
+F1_Score(y_pred = p2, y_true = test.data$Response, positive = "0")
 
 varImpPlot(rf)
 
@@ -456,9 +495,15 @@ final_rf <- randomForest(Response ~ ., data = train.data, mtry = best_mtry, ntre
 
 #test and get accuracy
 predicted_classes <- predict(final_rf, newdata = test.data)
-final_rf_accuracy <- mean(predicted_classes == test.data$Response)
-final_rf_accuracy
-  #~87% accuracy
+#final_rf_accuracy <- mean(predicted_classes == test.data$Response)
+#final_rf_accuracy
+
+rfcm2 <- confusionMatrix(p2, test.data$Response)
+rfcm2
+#~88% accuracy
+
+F1_Score(y_pred = predicted_classes, y_true = test.data$Response, positive = "0")
+#performs slightly worse than un-optimized rf
 
 varImpPlot(final_rf)
 #----
@@ -494,7 +539,7 @@ filtered_lasso2_storeClean <- lasso2_storeClean[lasso2_predictions > quantile(la
 filtered_lasso2_storeClean1 <- filtered_lasso2_storeClean[,c("Id","Predicted_Outcome")]
 head(filtered_lasso2_storeClean1,2)
 
-#which people are in the top 15% in all three models?
+#which people are in the top 15% in all three logistic regression models?
 sat_lasso1_join <- merge(filtered_lasso1_storeClean1, filtered_sat_storeClean1, by = "Id")
 final_join <- merge(filtered_lasso2_storeClean1, sat_lasso1_join, by = "Id")
 final_join
