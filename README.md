@@ -2,7 +2,7 @@
 
 [Data](https://www.kaggle.com/datasets/ahsan81/superstore-marketing-campaign-dataset)
 
-**Use r script file, not markdown**
+**Use Python file**
 
 Create a model to predict if a person will take part in a promotion
 
