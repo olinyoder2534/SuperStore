@@ -2,11 +2,11 @@
 
 [Data](https://www.kaggle.com/datasets/ahsan81/superstore-marketing-campaign-dataset)
 
-Create a model to predict if a person will take part in a promotion
+Create a model to predict if a customer will take part in a promotion
 
 * Classification
   * Logistic Regression (using lasso for feature selection)
-    * Best for interpretability, which will be important later
+    * Best for interpretability which will be important later
   * Random Forest
   * SVM or other method?
 
